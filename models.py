@@ -29,6 +29,8 @@ class Log(Base):
     end_km = Column(Float, nullable=True)
     alcohol_check = Column(Boolean, default=False)
     tire_check = Column(Boolean, default=False)
+    air_pressure_check = Column(Boolean, default=False)
+    oil_change_check = Column(Boolean, default=False)
     refuel_check = Column(Boolean, default=False)
 
     user = relationship("User")

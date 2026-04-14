@@ -111,16 +111,27 @@ def input_page():
                 start_km = st.number_input("出発時メーター (km)", value=last_km, step=0.1, format="%.1f", help="出発時のオドメーター数値を入力してください。前回の距離が自動入力されています。")
                 st.markdown("---")
                 alcohol_check = st.checkbox("✅ アルコールチェック (出発)", help="出発前のアルコールチェックを行ったらチェックを入れてください。")
-                tire_check = st.checkbox("✅ タイヤ点検", help="タイヤの空気圧や溝の確認を行ったらチェックを入れてください。")
+                # 出発時のタイヤ点検は要望により廃止（デフォルト False とする）
+                # tire_check チェックボックスを削除しました。
+                
+                
 
             with tab2:
                 end_time_str = st.selectbox("帰社時間", TIME_SLOTS, index=TIME_SLOTS.index("18:00") if "18:00" in TIME_SLOTS else len(TIME_SLOTS)-1, help="帰社した時間を選択してください。")
                 end_km = st.number_input("帰社時メーター (km)", value=last_km, step=0.1, format="%.1f", help="帰社時のオドメーター数値を入力してください。")
                 st.markdown("---")
                 refuel_check = st.checkbox("⛽️ 給油しましたか？", help="給油を行った場合はチェックを入れてください。")
+                air_pressure_check = st.checkbox("✅ 空気圧点検", help="空気圧の点検を行ったらチェックを入れてください。")
+                oil_change_check = st.checkbox("🔧 オイル交換を行った", help="帰社時にオイル交換を行ったらチェックを入れてください。")
 
         submitted = st.form_submit_button("登録する")
         
+        # 出発時のタイヤ点検チェックは UI から削除したため、未定義の場合は False に設定
+        try:
+            tire_check
+        except NameError:
+            tire_check = False
+
         if submitted:
             # Convert time strings back to time objects
             start_time = datetime.strptime(start_time_str, "%H:%M").time()
@@ -139,7 +150,9 @@ def input_page():
                     "end_km": end_km,
                     "alcohol_check": alcohol_check,
                     "tire_check": tire_check,
-                    "refuel_check": refuel_check
+                    "refuel_check": refuel_check,
+                    "air_pressure_check": air_pressure_check,
+                    "oil_change_check": oil_change_check
                 }
                 create_log(log_data)
                 

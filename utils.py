@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from models import Base, User, Vehicle, Log
 from datetime import date, timedelta
@@ -7,6 +7,38 @@ import pandas as pd
 DB_FILE = 'sqlite:///app.db'
 engine = create_engine(DB_FILE, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def ensure_air_pressure_column():
+    """Ensure the 'air_pressure_check' column exists in the 'logs' table.
+
+    For existing SQLite databases this will run ALTER TABLE to add the column with a default of 0.
+    Safe to call repeatedly.
+    """
+    try:
+        conn = engine.connect()
+        # Get existing columns
+        res = conn.execute(text("PRAGMA table_info('logs')")).fetchall()
+        existing_cols = [r[1] for r in res]
+
+        # Add air pressure column if missing
+        if 'air_pressure_check' not in existing_cols:
+            conn.execute(text("ALTER TABLE logs ADD COLUMN air_pressure_check BOOLEAN DEFAULT 0"))
+        # Add oil change column if missing
+        if 'oil_change_check' not in existing_cols:
+            conn.execute(text("ALTER TABLE logs ADD COLUMN oil_change_check BOOLEAN DEFAULT 0"))
+        conn.close()
+    except Exception:
+        # If the table does not exist yet or any error occurs, ignore here.
+        # init_db() or migration tooling will handle creating tables.
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+# Run migration check on import so existing DBs are upgraded automatically.
+ensure_air_pressure_column()
 
 def init_db():
     Base.metadata.drop_all(bind=engine)
@@ -58,7 +90,9 @@ def get_logs_as_dataframe():
         Log.end_km,
         Log.refuel_check,
         Log.alcohol_check,
-        Log.tire_check
+        Log.tire_check,
+        Log.air_pressure_check,
+        Log.oil_change_check
     ).join(User).join(Vehicle)
     
     df = pd.read_sql(query.statement, session.bind)
